@@ -68,12 +68,7 @@ function QuizContent() {
       const isTranslation = quizMode === "translation";
       const endpoint = isTranslation ? "/api/grade-translation" : "/api/grade";
 
-      const sectionCount = new Set(questions.map((q) => q.section)).size;
-      const testType = isTranslation
-        ? "和訳テスト"
-        : sectionCount === 1
-        ? "セクションテスト"
-        : "レビューテスト";
+      const testType = searchParams.get("testType") ?? "セクションテスト";
 
       const body = isTranslation
         ? {

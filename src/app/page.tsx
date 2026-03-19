@@ -165,17 +165,19 @@ export default function Home() {
       sections: String(selectedSection),
       count: String(count),
       mode: "english",
+      testType: "セクションテスト",
     });
     router.push(`/quiz?${params.toString()}`);
   };
 
-  const startMultiTest = (sects: number[], count: number, quizMode: string) => {
+  const startMultiTest = (sects: number[], count: number, quizMode: string, testType: string) => {
     if (sects.length === 0) return;
     const total = sects.reduce((sum, s) => sum + getSectionCount(s), 0);
     const params = new URLSearchParams({
       sections: sects.sort((a, b) => a - b).join(","),
       count: String(Math.min(count, total)),
       mode: quizMode,
+      testType,
     });
     router.push(`/quiz?${params.toString()}`);
   };
@@ -267,7 +269,7 @@ export default function Home() {
           setQuestionCount={setReviewCount}
           buttonLabel="レビューテスト開始"
           description="複数セクションから出題数を指定してテスト（日本語 → 英文）。"
-          onStart={() => startMultiTest(reviewSections, reviewCount, "english")}
+          onStart={() => startMultiTest(reviewSections, reviewCount, "english", "レビューテスト")}
         />
       )}
 
@@ -279,7 +281,7 @@ export default function Home() {
           setQuestionCount={setTransCount}
           buttonLabel="和訳テスト開始"
           description="英文 → 日本語訳を入力。意味が合っていればOKです。"
-          onStart={() => startMultiTest(transSections, transCount, "translation")}
+          onStart={() => startMultiTest(transSections, transCount, "translation", "和訳テスト")}
         />
       )}
     </div>
