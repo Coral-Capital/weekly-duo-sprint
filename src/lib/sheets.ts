@@ -3,9 +3,14 @@ import { google } from "googleapis";
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 const SHEET_NAME = "テスト結果";
 
+// Coral brand colors as RGB floats (0-1)
+const CORAL = { red: 1, green: 0.478, blue: 0.349 };       // #FF7A59
+const NIGHT_RIDER = { red: 0.2, green: 0.2, blue: 0.2 };   // #333333
+const SAND = { red: 0.929, green: 0.902, blue: 0.867 };     // #EDE6DD
+const WHITE = { red: 1, green: 1, blue: 1 };
+
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!;
-  // Handle both literal \n (from JSON-escaped env var) and real newlines
   const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY!;
   const key = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, "\n") : rawKey;
 
@@ -18,29 +23,99 @@ function getAuth() {
 
 async function ensureSheet(sheets: ReturnType<typeof google.sheets>, spreadsheetId: string) {
   const res = await sheets.spreadsheets.get({ spreadsheetId });
-  const exists = res.data.sheets?.some((s) => s.properties?.title === SHEET_NAME);
+  const existing = res.data.sheets?.find((s) => s.properties?.title === SHEET_NAME);
 
-  if (!exists) {
+  if (existing) return;
+
+  // Create sheet
+  const addRes = await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          addSheet: {
+            properties: { title: SHEET_NAME },
+          },
+        },
+      ],
+    },
+  });
+
+  const sheetId = addRes.data.replies?.[0]?.addSheet?.properties?.sheetId;
+
+  // Add header row
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${SHEET_NAME}!A1:H1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [["日時", "メール", "名前", "テスト種別", "セクション", "得点", "問題数", "正答率"]],
+    },
+  });
+
+  // Apply Coral brand formatting
+  if (sheetId !== undefined && sheetId !== null) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
         requests: [
+          // Header row: Coral text + Sand background + Bold
           {
-            addSheet: {
-              properties: { title: SHEET_NAME },
+            repeatCell: {
+              range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: SAND,
+                  textFormat: {
+                    foregroundColor: CORAL,
+                    bold: true,
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                  },
+                },
+              },
+              fields: "userEnteredFormat(backgroundColor,textFormat)",
+            },
+          },
+          // All data rows: Night Rider text + White background
+          {
+            repeatCell: {
+              range: { sheetId, startRowIndex: 1, endRowIndex: 1000 },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: WHITE,
+                  textFormat: {
+                    foregroundColor: NIGHT_RIDER,
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                  },
+                },
+              },
+              fields: "userEnteredFormat(backgroundColor,textFormat)",
+            },
+          },
+          // Freeze header row
+          {
+            updateSheetProperties: {
+              properties: {
+                sheetId,
+                gridProperties: { frozenRowCount: 1 },
+              },
+              fields: "gridProperties.frozenRowCount",
+            },
+          },
+          // Auto-resize columns
+          {
+            autoResizeDimensions: {
+              dimensions: {
+                sheetId,
+                dimension: "COLUMNS",
+                startIndex: 0,
+                endIndex: 8,
+              },
             },
           },
         ],
-      },
-    });
-
-    // Add header row
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `${SHEET_NAME}!A1:H1`,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [["日時", "メール", "名前", "テスト種別", "セクション", "得点", "問題数", "正答率"]],
       },
     });
   }
