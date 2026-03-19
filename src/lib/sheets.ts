@@ -128,6 +128,7 @@ export async function appendResult(data: {
   totalScore: number;
   totalQuestions: number;
   percentage: number;
+  testType?: string;
 }) {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID!;
   const auth = getAuth();
@@ -136,7 +137,7 @@ export async function appendResult(data: {
   await ensureSheet(sheets, spreadsheetId);
 
   const now = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
-  const testType = data.sections.length === 1 ? "セクションテスト" : "レビューテスト";
+  const testType = data.testType ?? (data.sections.length === 1 ? "セクションテスト" : "レビューテスト");
   const sectionStr = data.sections.join(", ");
 
   await sheets.spreadsheets.values.append({

@@ -43,8 +43,10 @@ export async function POST(request: Request) {
       totalScore,
       totalQuestions,
       percentage,
+      testType: "和訳テスト",
     }).catch((err) => {
       console.error("Failed to write to Google Sheets:", err?.message || err);
+      if (err?.response?.data) console.error("Sheets API details:", JSON.stringify(err.response.data));
     });
 
     return NextResponse.json({
