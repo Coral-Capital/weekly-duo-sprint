@@ -61,7 +61,12 @@ export async function POST(request: Request) {
       totalScore,
       totalQuestions,
       percentage,
-      ...(sheetsError ? { sheetsError } : {}),
+      sheetsDebug: {
+        error: sheetsError,
+        hasEnvVar: !!process.env.GOOGLE_SERVICE_ACCOUNT_BASE64,
+        hasSpreadsheetId: !!process.env.GOOGLE_SPREADSHEET_ID,
+        envVarLength: process.env.GOOGLE_SERVICE_ACCOUNT_BASE64?.length ?? 0,
+      },
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
