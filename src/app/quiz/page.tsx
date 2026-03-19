@@ -75,7 +75,6 @@ function QuizContent() {
         }),
       });
       const data = await res.json();
-      // Store results in sessionStorage and navigate
       sessionStorage.setItem("quizResults", JSON.stringify(data));
       router.push("/result");
     } catch {
@@ -86,7 +85,7 @@ function QuizContent() {
   };
 
   if (questions.length === 0) {
-    return <div className="text-center py-12 text-gray-500">読み込み中...</div>;
+    return <div className="text-center py-12 text-nobel">読み込み中...</div>;
   }
 
   const q = questions[currentIndex];
@@ -95,25 +94,23 @@ function QuizContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-nobel">
           問 {currentIndex + 1} / {questions.length}
         </span>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-nobel">
           回答済み: {progress} / {questions.length}
         </span>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-sand rounded-full h-2">
         <div
-          className="bg-blue-600 h-2 rounded-full transition-all"
+          className="bg-coral h-2 rounded-full transition-all"
           style={{ width: `${(progress / questions.length) * 100}%` }}
         />
       </div>
 
-      {/* Question card */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-        <div className="flex items-center gap-2 text-xs text-gray-400">
+      <div className="bg-white rounded-xl shadow-sm border border-alto/50 p-6 space-y-4">
+        <div className="flex items-center gap-2 text-xs text-nobel">
           <span>Section {q.section}</span>
           <span>#{q.id}</span>
         </div>
@@ -122,22 +119,20 @@ function QuizContent() {
           value={answers[currentIndex]}
           onChange={(e) => updateAnswer(currentIndex, e.target.value)}
           placeholder="英文を入力してください..."
-          className="w-full p-4 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] text-base"
+          className="w-full p-4 border border-alto rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-coral min-h-[120px] text-base"
           autoFocus
         />
       </div>
 
-      {/* Navigation */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
           disabled={currentIndex === 0}
-          className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="px-4 py-2 rounded-lg border border-alto bg-white hover:bg-sand/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           前へ
         </button>
 
-        {/* Question number pills */}
         <div className="flex-1 flex flex-wrap gap-1 justify-center">
           {questions.map((_, i) => (
             <button
@@ -145,10 +140,10 @@ function QuizContent() {
               onClick={() => setCurrentIndex(i)}
               className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
                 i === currentIndex
-                  ? "bg-blue-600 text-white"
+                  ? "bg-coral text-white"
                   : answers[i]?.trim()
-                  ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-gray-100 text-gray-400 border"
+                  ? "bg-bermuda/30 text-bermuda-dark border border-bermuda"
+                  : "bg-whitesmoke text-nobel border border-alto/50"
               }`}
             >
               {i + 1}
@@ -161,7 +156,7 @@ function QuizContent() {
             onClick={() =>
               setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
             }
-            className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50"
+            className="px-4 py-2 rounded-lg border border-alto bg-white hover:bg-sand/50 transition-colors"
           >
             次へ
           </button>
@@ -169,21 +164,22 @@ function QuizContent() {
           <button
             onClick={submitQuiz}
             disabled={isSubmitting}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="px-6 py-2 rounded-lg bg-coral text-white font-medium hover:bg-coral-hover disabled:opacity-50 transition-colors"
           >
             {isSubmitting ? "採点中..." : "提出"}
           </button>
         )}
       </div>
 
-      {/* Submit button always visible */}
       {currentIndex < questions.length - 1 && (
         <button
           onClick={submitQuiz}
           disabled={isSubmitting}
-          className="w-full py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+          className="w-full py-3 rounded-lg bg-bermuda-dark text-white font-semibold hover:bg-bermuda transition-colors disabled:opacity-50"
         >
-          {isSubmitting ? "採点中..." : `テストを提出する (${progress}/${questions.length} 回答済み)`}
+          {isSubmitting
+            ? "採点中..."
+            : `テストを提出する (${progress}/${questions.length} 回答済み)`}
         </button>
       )}
     </div>
@@ -192,7 +188,11 @@ function QuizContent() {
 
 export default function QuizPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-gray-500">読み込み中...</div>}>
+    <Suspense
+      fallback={
+        <div className="text-center py-12 text-nobel">読み込み中...</div>
+      }
+    >
       <QuizContent />
     </Suspense>
   );

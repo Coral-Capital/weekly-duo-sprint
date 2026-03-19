@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import duoData from "@/data/duo-data.json";
 
@@ -12,6 +12,18 @@ export default function Home() {
   const router = useRouter();
   const [selectedSections, setSelectedSections] = useState<number[]>([]);
   const [questionCount, setQuestionCount] = useState(10);
+
+  const totalAvailable = selectedSections.reduce((sum, s) => {
+    const key = String(s) as keyof typeof duoData;
+    return sum + (duoData[key]?.length ?? 0);
+  }, 0);
+
+  // 1セクションのみ選択時は全問出題をデフォルトにする
+  useEffect(() => {
+    if (selectedSections.length === 1) {
+      setQuestionCount(totalAvailable);
+    }
+  }, [selectedSections, totalAvailable]);
 
   const toggleSection = (s: number) => {
     setSelectedSections((prev) =>
@@ -31,11 +43,6 @@ export default function Home() {
     });
   };
 
-  const totalAvailable = selectedSections.reduce((sum, s) => {
-    const key = String(s) as keyof typeof duoData;
-    return sum + (duoData[key]?.length ?? 0);
-  }, 0);
-
   const startQuiz = () => {
     if (selectedSections.length === 0) return;
     const params = new URLSearchParams({
@@ -49,7 +56,7 @@ export default function Home() {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold mb-2">DUO 小テスト</h2>
-        <p className="text-gray-600">
+        <p className="text-nobel">
           セクションを選び、出題数を設定してテストを始めましょう。
           日本語の文章が表示されるので、対応する英文を入力してください。
         </p>
@@ -64,7 +71,7 @@ export default function Home() {
                 selectedSections.length === sections.length ? [] : [...sections]
               )
             }
-            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 hover:bg-gray-300"
+            className="px-3 py-1 rounded text-sm font-medium bg-sand hover:bg-sand/70 transition-colors"
           >
             {selectedSections.length === sections.length
               ? "全解除"
@@ -78,7 +85,7 @@ export default function Home() {
             <button
               key={`${start}-${end}`}
               onClick={() => selectRange(start, end)}
-              className="px-3 py-1 rounded text-sm font-medium bg-gray-200 hover:bg-gray-300"
+              className="px-3 py-1 rounded text-sm font-medium bg-sand hover:bg-sand/70 transition-colors"
             >
               {start}-{end}
             </button>
@@ -91,8 +98,8 @@ export default function Home() {
               onClick={() => toggleSection(s)}
               className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                 selectedSections.includes(s)
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-gray-300 hover:border-blue-400"
+                  ? "bg-coral text-white"
+                  : "bg-white border border-alto hover:border-coral"
               }`}
             >
               {s}
@@ -100,8 +107,9 @@ export default function Home() {
           ))}
         </div>
         {selectedSections.length > 0 && (
-          <p className="mt-2 text-sm text-gray-500">
-            選択中: {selectedSections.length}セクション ({totalAvailable}問から出題可能)
+          <p className="mt-2 text-sm text-nobel">
+            選択中: {selectedSections.length}セクション ({totalAvailable}
+            問から出題可能)
           </p>
         )}
       </div>
@@ -115,7 +123,7 @@ export default function Home() {
             max={Math.max(totalAvailable, 1)}
             value={Math.min(questionCount, totalAvailable || 1)}
             onChange={(e) => setQuestionCount(Number(e.target.value))}
-            className="flex-1"
+            className="flex-1 accent-coral"
             disabled={totalAvailable === 0}
           />
           <input
@@ -124,17 +132,17 @@ export default function Home() {
             max={totalAvailable}
             value={questionCount}
             onChange={(e) => setQuestionCount(Number(e.target.value))}
-            className="w-20 px-3 py-2 border rounded text-center"
+            className="w-20 px-3 py-2 border border-alto rounded text-center focus:outline-none focus:ring-2 focus:ring-coral"
             disabled={totalAvailable === 0}
           />
-          <span className="text-sm text-gray-500">問</span>
+          <span className="text-sm text-nobel">問</span>
         </div>
       </div>
 
       <button
         onClick={startQuiz}
         disabled={selectedSections.length === 0}
-        className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        className="w-full py-3 bg-coral text-white rounded-lg font-semibold text-lg hover:bg-coral-hover disabled:bg-alto disabled:cursor-not-allowed transition-colors"
       >
         テスト開始
       </button>
