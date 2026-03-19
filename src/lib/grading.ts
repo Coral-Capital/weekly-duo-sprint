@@ -8,7 +8,6 @@
  * - Ignored characters: , . ! ? " ' : ; — – ( ) 「」
  */
 
-// Characters to strip for comparison
 const PUNCTUATION_RE = /[,.\-!?;:'""\u201C\u201D\u2018\u2019()\u300C\u300D\u2014\u2013]/g;
 
 function normalize(text: string): string {
@@ -23,7 +22,6 @@ function tokenize(text: string): string[] {
   return normalize(text).split(" ").filter(Boolean);
 }
 
-// Levenshtein distance
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
@@ -42,23 +40,29 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-// Check if two words are a "spelling error" (close but not exact)
 function isSpellingError(answer: string, correct: string): boolean {
   if (answer === correct) return false;
   const maxLen = Math.max(answer.length, correct.length);
   if (maxLen === 0) return false;
   const dist = levenshtein(answer, correct);
-  // Allow up to ~30% of the word length as spelling error, min 1, max 3
   const threshold = Math.min(3, Math.max(1, Math.ceil(maxLen * 0.3)));
   return dist <= threshold;
 }
 
+// "match" = exact, "spelling" = close, "wrong" = different word, "missing" = user skipped, "extra" = user added
+export type WordDiff = {
+  type: "match" | "spelling" | "wrong" | "missing" | "extra";
+  userWord: string | null;
+  correctWord: string | null;
+};
+
 export type GradeResult = {
-  score: number; // 0, 0.5, or 1
+  score: number;
   status: "correct" | "spelling" | "wrong";
   userAnswer: string;
   correctAnswer: string;
   details: string;
+  diff: WordDiff[];
 };
 
 export function gradeAnswer(userAnswer: string, correctAnswer: string): GradeResult {
@@ -67,47 +71,55 @@ export function gradeAnswer(userAnswer: string, correctAnswer: string): GradeRes
     correctAnswer,
   };
 
+  // Empty answer
+  if (!userAnswer.trim()) {
+    const correctTokens = tokenize(correctAnswer);
+    return {
+      ...base,
+      score: 0,
+      status: "wrong",
+      details: "未回答",
+      diff: correctTokens.map((w) => ({ type: "missing", userWord: null, correctWord: w })),
+    };
+  }
+
   // Exact match after normalization
   if (normalize(userAnswer) === normalize(correctAnswer)) {
-    return { ...base, score: 1, status: "correct", details: "完全一致" };
+    const tokens = tokenize(correctAnswer);
+    return {
+      ...base,
+      score: 1,
+      status: "correct",
+      details: "完全一致",
+      diff: tokens.map((w) => ({ type: "match", userWord: w, correctWord: w })),
+    };
   }
 
   const userTokens = tokenize(userAnswer);
   const correctTokens = tokenize(correctAnswer);
 
-  // If word count differs significantly, it's wrong
-  if (
-    Math.abs(userTokens.length - correctTokens.length) >
-    Math.max(2, correctTokens.length * 0.3)
-  ) {
-    return {
-      ...base,
-      score: 0,
-      status: "wrong",
-      details: "文の構造が大きく異なります",
-    };
-  }
+  const aligned = alignWords(userTokens, correctTokens);
 
-  // Try to align words and check for spelling errors vs wrong words
-  // Use a simple sequential alignment
+  // Build diff and determine score
+  const diff: WordDiff[] = [];
   let hasSpellingError = false;
   let hasWrongWord = false;
 
-  // Dynamic alignment using LCS-like approach
-  const aligned = alignWords(userTokens, correctTokens);
-
   for (const pair of aligned) {
-    if (pair.user === pair.correct) continue;
-    if (pair.user === null || pair.correct === null) {
-      // Missing or extra word
+    if (pair.user === pair.correct) {
+      diff.push({ type: "match", userWord: pair.user, correctWord: pair.correct });
+    } else if (pair.user === null) {
+      diff.push({ type: "missing", userWord: null, correctWord: pair.correct });
       hasWrongWord = true;
-      break;
-    }
-    if (isSpellingError(pair.user, pair.correct)) {
+    } else if (pair.correct === null) {
+      diff.push({ type: "extra", userWord: pair.user, correctWord: null });
+      hasWrongWord = true;
+    } else if (isSpellingError(pair.user, pair.correct)) {
+      diff.push({ type: "spelling", userWord: pair.user, correctWord: pair.correct });
       hasSpellingError = true;
     } else {
+      diff.push({ type: "wrong", userWord: pair.user, correctWord: pair.correct });
       hasWrongWord = true;
-      break;
     }
   }
 
@@ -117,6 +129,7 @@ export function gradeAnswer(userAnswer: string, correctAnswer: string): GradeRes
       score: 0,
       status: "wrong",
       details: "使われている単語やフレーズが異なります",
+      diff,
     };
   }
 
@@ -126,11 +139,18 @@ export function gradeAnswer(userAnswer: string, correctAnswer: string): GradeRes
       score: 0.5,
       status: "spelling",
       details: "スペルミスがあります (-0.5点)",
+      diff,
     };
   }
 
-  // Shouldn't reach here, but just in case
-  return { ...base, score: 1, status: "correct", details: "完全一致" };
+  const tokens = tokenize(correctAnswer);
+  return {
+    ...base,
+    score: 1,
+    status: "correct",
+    details: "完全一致",
+    diff: tokens.map((w) => ({ type: "match", userWord: w, correctWord: w })),
+  };
 }
 
 type WordPair = { user: string | null; correct: string | null };
@@ -139,12 +159,10 @@ function alignWords(userWords: string[], correctWords: string[]): WordPair[] {
   const m = userWords.length;
   const n = correctWords.length;
 
-  // Simple case: same length, align directly
   if (m === n) {
     return userWords.map((u, i) => ({ user: u, correct: correctWords[i] }));
   }
 
-  // Use LCS to find best alignment
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -156,7 +174,6 @@ function alignWords(userWords: string[], correctWords: string[]): WordPair[] {
     }
   }
 
-  // Backtrack to get alignment
   const result: WordPair[] = [];
   let i = m, j = n;
   while (i > 0 || j > 0) {
