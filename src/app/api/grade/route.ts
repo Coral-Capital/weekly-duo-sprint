@@ -38,24 +38,30 @@ export async function POST(request: Request) {
 
     const sections = [...new Set(questions.map((q) => q.section))].sort((a, b) => a - b);
 
-    // Write to Google Sheets (non-blocking)
-    appendResult({
-      email: session?.user?.email ?? "unknown",
-      name: session?.user?.name ?? "unknown",
-      sections,
-      totalScore,
-      totalQuestions,
-      percentage,
-    }).catch((err) => {
-      console.error("Failed to write to Google Sheets:", err?.message || err);
-      if (err?.response?.data) console.error("Sheets API details:", JSON.stringify(err.response.data));
-    });
+    // Write to Google Sheets
+    let sheetsError: string | null = null;
+    try {
+      await appendResult({
+        email: session?.user?.email ?? "unknown",
+        name: session?.user?.name ?? "unknown",
+        sections,
+        totalScore,
+        totalQuestions,
+        percentage,
+      });
+    } catch (err: unknown) {
+      const e = err as { message?: string; response?: { data?: unknown } };
+      sheetsError = e?.message || "Unknown sheets error";
+      console.error("Failed to write to Google Sheets:", sheetsError);
+      if (e?.response?.data) console.error("Details:", JSON.stringify(e.response.data));
+    }
 
     return NextResponse.json({
       results,
       totalScore,
       totalQuestions,
       percentage,
+      ...(sheetsError ? { sheetsError } : {}),
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
