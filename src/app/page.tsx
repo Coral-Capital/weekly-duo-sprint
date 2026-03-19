@@ -16,7 +16,7 @@ function getSectionCount(s: number): number {
 type Mode = "section" | "review" | "translation";
 
 const MODES: { key: Mode; label: string }[] = [
-  { key: "section", label: "英作文テスト" },
+  { key: "section", label: "セクションテスト" },
   { key: "review", label: "レビューテスト" },
   { key: "translation", label: "和訳テスト" },
 ];
