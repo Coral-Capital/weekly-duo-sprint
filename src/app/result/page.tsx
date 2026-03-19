@@ -32,76 +32,31 @@ function DiffDisplay({ diff, mode }: { diff: WordDiff[]; mode: "user" | "correct
   return (
     <span>
       {diff.map((d, i) => {
+        const space = i > 0 ? " " : "";
         if (mode === "user") {
-          // User's answer view
           if (d.type === "match") {
-            return <span key={i}>{i > 0 ? " " : ""}{d.userWord}</span>;
+            return <span key={i}>{space}{d.userWord}</span>;
           }
           if (d.type === "spelling") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="underline decoration-wavy decoration-coral text-coral font-medium">{d.userWord}</span>
-              </span>
-            );
+            return <span key={i}>{space}<span className="bg-yellow-100 px-0.5 rounded underline decoration-wavy decoration-yellow-500">{d.userWord}</span></span>;
           }
-          if (d.type === "wrong") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="line-through text-red-500">{d.userWord}</span>
-              </span>
-            );
-          }
-          if (d.type === "extra") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="line-through text-red-400 bg-red-50 px-0.5 rounded">{d.userWord}</span>
-              </span>
-            );
+          if (d.type === "wrong" || d.type === "extra") {
+            return <span key={i}>{space}<span className="bg-red-100 px-0.5 rounded line-through">{d.userWord}</span></span>;
           }
           if (d.type === "missing") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="text-nobel border-b-2 border-dashed border-red-300 px-1">___</span>
-              </span>
-            );
+            return <span key={i}>{space}<span className="bg-red-100 text-red-400 px-1 rounded text-xs">抜け</span></span>;
           }
         } else {
-          // Correct answer view
           if (d.type === "match") {
-            return <span key={i}>{i > 0 ? " " : ""}{d.correctWord}</span>;
+            return <span key={i}>{space}{d.correctWord}</span>;
           }
           if (d.type === "spelling") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="underline decoration-coral font-medium text-coral">{d.correctWord}</span>
-              </span>
-            );
+            return <span key={i}>{space}<span className="bg-yellow-100 px-0.5 rounded font-medium">{d.correctWord}</span></span>;
           }
-          if (d.type === "wrong") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="font-semibold text-bermuda-dark bg-bermuda/15 px-0.5 rounded">{d.correctWord}</span>
-              </span>
-            );
+          if (d.type === "wrong" || d.type === "missing") {
+            return <span key={i}>{space}<span className="bg-green-100 px-0.5 rounded font-medium">{d.correctWord}</span></span>;
           }
-          if (d.type === "missing") {
-            return (
-              <span key={i}>
-                {i > 0 ? " " : ""}
-                <span className="font-semibold text-bermuda-dark bg-bermuda/15 px-0.5 rounded">{d.correctWord}</span>
-              </span>
-            );
-          }
-          if (d.type === "extra") {
-            // No corresponding correct word
-            return null;
-          }
+          if (d.type === "extra") return null;
         }
         return null;
       })}
@@ -189,16 +144,16 @@ export default function ResultPage() {
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs text-nobel">
         <span className="flex items-center gap-1">
-          <span className="underline decoration-wavy decoration-coral text-coral">波線</span> = スペルミス
+          <span className="bg-yellow-100 px-1 rounded underline decoration-wavy decoration-yellow-500">黄</span> スペルミス
         </span>
         <span className="flex items-center gap-1">
-          <span className="line-through text-red-500">取消線</span> = 間違い/余分
+          <span className="bg-red-100 px-1 rounded line-through">赤</span> 間違い・余分
         </span>
         <span className="flex items-center gap-1">
-          <span className="border-b-2 border-dashed border-red-300 px-1">___</span> = 抜け
+          <span className="bg-red-100 text-red-400 px-1 rounded">抜け</span> 単語の抜け
         </span>
         <span className="flex items-center gap-1">
-          <span className="bg-bermuda/15 text-bermuda-dark px-0.5 rounded font-semibold">緑</span> = 正解の単語
+          <span className="bg-green-100 px-1 rounded font-medium">緑</span> 正しい単語
         </span>
       </div>
 
