@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { gradeAnswer, type GradeResult } from "@/lib/grading";
+import { appendResult } from "@/lib/sheets";
+import { auth } from "@/lib/auth";
 
 type QuestionInput = {
   id: number;
@@ -11,6 +13,7 @@ type QuestionInput = {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
     const body = await request.json();
     const questions: QuestionInput[] = body.questions;
 
@@ -31,12 +34,27 @@ export async function POST(request: Request) {
 
     const totalScore = results.reduce((sum, r) => sum + r.score, 0);
     const totalQuestions = results.length;
+    const percentage = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+
+    const sections = [...new Set(questions.map((q) => q.section))].sort((a, b) => a - b);
+
+    // Write to Google Sheets (non-blocking)
+    appendResult({
+      email: session?.user?.email ?? "unknown",
+      name: session?.user?.name ?? "unknown",
+      sections,
+      totalScore,
+      totalQuestions,
+      percentage,
+    }).catch((err) => {
+      console.error("Failed to write to Google Sheets:", err);
+    });
 
     return NextResponse.json({
       results,
       totalScore,
       totalQuestions,
-      percentage: totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0,
+      percentage,
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });

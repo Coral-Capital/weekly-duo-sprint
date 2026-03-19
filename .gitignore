@@ -25,6 +25,12 @@ npm-debug.log*
 # env files
 .env*.local
 
+# service account keys
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
