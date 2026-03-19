@@ -5,7 +5,9 @@ const SHEET_NAME = "テスト結果";
 
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!;
-  const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY!.replace(/\\n/g, "\n");
+  // Handle both literal \n (from JSON-escaped env var) and real newlines
+  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY!;
+  const key = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, "\n") : rawKey;
 
   return new google.auth.JWT({
     email,

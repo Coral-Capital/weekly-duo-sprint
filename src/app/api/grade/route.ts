@@ -47,7 +47,8 @@ export async function POST(request: Request) {
       totalQuestions,
       percentage,
     }).catch((err) => {
-      console.error("Failed to write to Google Sheets:", err);
+      console.error("Failed to write to Google Sheets:", err?.message || err);
+      if (err?.response?.data) console.error("Sheets API details:", JSON.stringify(err.response.data));
     });
 
     return NextResponse.json({
