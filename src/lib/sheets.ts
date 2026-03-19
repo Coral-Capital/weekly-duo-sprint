@@ -10,7 +10,8 @@ const SAND = { red: 0.929, green: 0.902, blue: 0.867 };     // #EDE6DD
 const WHITE = { red: 1, green: 1, blue: 1 };
 
 function getAuth() {
-  const json = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
+  const decoded = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_BASE64!, "base64").toString("utf-8");
+  const json = JSON.parse(decoded);
 
   return new google.auth.JWT({
     email: json.client_email,
