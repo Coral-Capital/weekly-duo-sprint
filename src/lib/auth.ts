@@ -8,6 +8,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
+          scope: "openid email profile",
           prompt: "select_account",
           hd: "coralcap.co",
         },
