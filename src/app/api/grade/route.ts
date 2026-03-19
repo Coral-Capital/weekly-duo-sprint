@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const session = await auth();
     const body = await request.json();
     const questions: QuestionInput[] = body.questions;
+    const testType: string = body.testType ?? "セクションテスト";
 
     if (!Array.isArray(questions)) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
@@ -38,35 +39,24 @@ export async function POST(request: Request) {
 
     const sections = [...new Set(questions.map((q) => q.section))].sort((a, b) => a - b);
 
-    // Write to Google Sheets
-    let sheetsError: string | null = null;
-    try {
-      await appendResult({
-        email: session?.user?.email ?? "unknown",
-        name: session?.user?.name ?? "unknown",
-        sections,
-        totalScore,
-        totalQuestions,
-        percentage,
-      });
-    } catch (err: unknown) {
-      const e = err as { message?: string; response?: { data?: unknown } };
-      sheetsError = e?.message || "Unknown sheets error";
-      console.error("Failed to write to Google Sheets:", sheetsError);
-      if (e?.response?.data) console.error("Details:", JSON.stringify(e.response.data));
-    }
+    // Write to Google Sheets (non-blocking)
+    appendResult({
+      email: session?.user?.email ?? "unknown",
+      name: session?.user?.name ?? "unknown",
+      sections,
+      totalScore,
+      totalQuestions,
+      percentage,
+      testType,
+    }).catch((err) => {
+      console.error("Failed to write to Google Sheets:", err?.message || err);
+    });
 
     return NextResponse.json({
       results,
       totalScore,
       totalQuestions,
       percentage,
-      sheetsDebug: {
-        error: sheetsError,
-        hasEnvVar: !!process.env.GOOGLE_SERVICE_ACCOUNT_BASE64,
-        hasSpreadsheetId: !!process.env.GOOGLE_SPREADSHEET_ID,
-        envVarLength: process.env.GOOGLE_SERVICE_ACCOUNT_BASE64?.length ?? 0,
-      },
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });

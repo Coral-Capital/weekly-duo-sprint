@@ -68,6 +68,13 @@ function QuizContent() {
       const isTranslation = quizMode === "translation";
       const endpoint = isTranslation ? "/api/grade-translation" : "/api/grade";
 
+      const sectionCount = new Set(questions.map((q) => q.section)).size;
+      const testType = isTranslation
+        ? "和訳テスト"
+        : sectionCount === 1
+        ? "セクションテスト"
+        : "レビューテスト";
+
       const body = isTranslation
         ? {
             questions: questions.map((q, i) => ({
@@ -77,6 +84,7 @@ function QuizContent() {
               correctJp: q.jp,
               userAnswer: answers[i] || "",
             })),
+            testType,
           }
         : {
             questions: questions.map((q, i) => ({
@@ -86,6 +94,7 @@ function QuizContent() {
               correctAnswer: q.en,
               userAnswer: answers[i] || "",
             })),
+            testType,
           };
 
       const res = await fetch(endpoint, {

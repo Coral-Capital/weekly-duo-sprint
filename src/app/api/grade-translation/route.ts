@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const session = await auth();
     const body = await request.json();
     const questions: QuestionInput[] = body.questions;
+    const testType: string = body.testType ?? "和訳テスト";
 
     if (!Array.isArray(questions)) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       totalScore,
       totalQuestions,
       percentage,
-      testType: "和訳テスト",
+      testType,
     }).catch((err) => {
       console.error("Failed to write to Google Sheets:", err?.message || err);
       if (err?.response?.data) console.error("Sheets API details:", JSON.stringify(err.response.data));
