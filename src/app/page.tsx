@@ -13,16 +13,19 @@ function getSectionCount(s: number): number {
   return duoData[key]?.length ?? 0;
 }
 
-type Mode = "section" | "review";
+type Mode = "section" | "review" | "translation";
+
+const MODES: { key: Mode; label: string }[] = [
+  { key: "section", label: "英作文テスト" },
+  { key: "translation", label: "和訳テスト" },
+  { key: "review", label: "レビューテスト" },
+];
 
 export default function Home() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("section");
 
-  // Section test state
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
-
-  // Review test state
   const [reviewSections, setReviewSections] = useState<number[]>([]);
   const [questionCount, setQuestionCount] = useState(20);
 
@@ -47,12 +50,13 @@ export default function Home() {
     });
   };
 
-  const startSectionTest = () => {
+  const startSectionTest = (testMode: "section" | "translation") => {
     if (selectedSection === null) return;
     const count = getSectionCount(selectedSection);
     const params = new URLSearchParams({
       sections: String(selectedSection),
       count: String(count),
+      mode: testMode === "translation" ? "translation" : "english",
     });
     router.push(`/quiz?${params.toString()}`);
   };
@@ -62,6 +66,7 @@ export default function Home() {
     const params = new URLSearchParams({
       sections: reviewSections.sort((a, b) => a - b).join(","),
       count: String(Math.min(questionCount, reviewTotal)),
+      mode: "english",
     });
     router.push(`/quiz?${params.toString()}`);
   };
@@ -71,39 +76,33 @@ export default function Home() {
       <div>
         <h2 className="text-2xl font-bold mb-2">DUO 小テスト</h2>
         <p className="text-nobel">
-          日本語の文章が表示されるので、対応する英文を入力してください。
+          テストの種類を選んで、セクションを選択してください。
         </p>
       </div>
 
       {/* Mode tabs */}
       <div className="flex rounded-lg overflow-hidden border border-alto">
-        <button
-          onClick={() => setMode("section")}
-          className={`flex-1 py-3 text-center font-semibold transition-colors ${
-            mode === "section"
-              ? "bg-coral text-white"
-              : "bg-white text-nightrider hover:bg-sand/50"
-          }`}
-        >
-          セクションテスト
-        </button>
-        <button
-          onClick={() => setMode("review")}
-          className={`flex-1 py-3 text-center font-semibold transition-colors ${
-            mode === "review"
-              ? "bg-coral text-white"
-              : "bg-white text-nightrider hover:bg-sand/50"
-          }`}
-        >
-          レビューテスト
-        </button>
+        {MODES.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setMode(m.key)}
+            className={`flex-1 py-3 text-center font-semibold text-sm transition-colors ${
+              mode === m.key
+                ? "bg-coral text-white"
+                : "bg-white text-nightrider hover:bg-sand/50"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
-      {mode === "section" ? (
-        /* ─── Section Test ─── */
+      {(mode === "section" || mode === "translation") ? (
         <div className="space-y-6">
           <p className="text-sm text-nobel">
-            1つのセクションを選択すると、そのセクションの全問が出題されます。
+            {mode === "section"
+              ? "日本語 → 英文を入力。1セクションの全問が出題されます。"
+              : "英文 → 日本語訳を入力。意味が合っていればOKです。"}
           </p>
 
           <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
@@ -146,18 +145,18 @@ export default function Home() {
           )}
 
           <button
-            onClick={startSectionTest}
+            onClick={() => startSectionTest(mode)}
             disabled={selectedSection === null}
             className="w-full py-3 bg-coral text-white rounded-lg font-semibold text-lg hover:bg-coral-hover disabled:bg-alto disabled:cursor-not-allowed transition-colors"
           >
-            テスト開始
+            {mode === "translation" ? "和訳テスト開始" : "テスト開始"}
           </button>
         </div>
       ) : (
         /* ─── Review Test ─── */
         <div className="space-y-6">
           <p className="text-sm text-nobel">
-            複数セクションから出題数を指定してテストできます。
+            複数セクションから出題数を指定してテストできます（日本語 → 英文）。
           </p>
 
           <div>

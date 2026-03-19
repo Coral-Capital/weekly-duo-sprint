@@ -22,14 +22,18 @@ function QuizContent() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizMode, setQuizMode] = useState<"english" | "translation">("english");
 
   useEffect(() => {
     const sectionParam = searchParams.get("sections");
     const countParam = searchParams.get("count");
+    const modeParam = searchParams.get("mode");
     if (!sectionParam) {
       router.push("/");
       return;
     }
+
+    setQuizMode(modeParam === "translation" ? "translation" : "english");
 
     const sectionNums = sectionParam.split(",").map(Number);
     const count = Number(countParam) || 10;
@@ -61,18 +65,33 @@ function QuizContent() {
   const submitQuiz = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/grade", {
+      const isTranslation = quizMode === "translation";
+      const endpoint = isTranslation ? "/api/grade-translation" : "/api/grade";
+
+      const body = isTranslation
+        ? {
+            questions: questions.map((q, i) => ({
+              id: q.id,
+              section: q.section,
+              en: q.en,
+              correctJp: q.jp,
+              userAnswer: answers[i] || "",
+            })),
+          }
+        : {
+            questions: questions.map((q, i) => ({
+              id: q.id,
+              section: q.section,
+              jp: q.jp,
+              correctAnswer: q.en,
+              userAnswer: answers[i] || "",
+            })),
+          };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          questions: questions.map((q, i) => ({
-            id: q.id,
-            section: q.section,
-            jp: q.jp,
-            correctAnswer: q.en,
-            userAnswer: answers[i] || "",
-          })),
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       sessionStorage.setItem("quizResults", JSON.stringify(data));
@@ -90,13 +109,19 @@ function QuizContent() {
 
   const q = questions[currentIndex];
   const progress = answers.filter((a) => a.trim().length > 0).length;
+  const isTranslation = quizMode === "translation";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-nobel">
-          問 {currentIndex + 1} / {questions.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-nobel">
+            問 {currentIndex + 1} / {questions.length}
+          </span>
+          {isTranslation && (
+            <span className="text-xs bg-bermuda/20 text-bermuda-dark px-2 py-0.5 rounded">和訳</span>
+          )}
+        </div>
         <span className="text-sm text-nobel">
           回答済み: {progress} / {questions.length}
         </span>
@@ -114,11 +139,13 @@ function QuizContent() {
           <span>Section {q.section}</span>
           <span>#{q.id}</span>
         </div>
-        <p className="text-lg font-medium leading-relaxed">{q.jp}</p>
+        <p className="text-lg font-medium leading-relaxed">
+          {isTranslation ? q.en : q.jp}
+        </p>
         <textarea
           value={answers[currentIndex]}
           onChange={(e) => updateAnswer(currentIndex, e.target.value)}
-          placeholder="英文を入力してください..."
+          placeholder={isTranslation ? "日本語訳を入力してください..." : "英文を入力してください..."}
           className="w-full p-4 border border-alto rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-coral min-h-[120px] text-base"
           autoFocus
         />
